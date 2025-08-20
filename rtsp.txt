@@ -1,0 +1,148 @@
+--------  Intelbras -------------------------------------------------------
+rtsp://usuário:senha@ip:porta/cam/realmonitor?channel=1&subtype=0
+
+--------  Luxvision -------------------------------------------------------
+rtsp://ip:porta/user=[usuário]&password=[senha]&channel=1&stream=0.sdp
+
+--------  Hikvision -------------------------------------------------------
+rtsp://usuário:senha@ip:porta/Streaming/Channels/102
+
+
+https://github.com/home-assistant/core/issues/86204
+
+
+rtsp://192.168.0.8:554/cam/realmonitor?channel=1&subtype=0
+
+
+» Porta RTSP: o valor padrão é 554. O formato para acesso RTSP é:
+» Para o Stream Principal:
+[url]rtsp://username:password@ip:port/cam/realmonitor?channel=1&subtype=0[/url]
+» Para o Stream Extra:
+[url]rtsp://username:password@ip:port/cam/realmonitor?channel=1&subtype=1[/url]
+
+
+
+
+
+Segue abaixo uma lista com os endereços RTSPs conhecidos para a grande maioria dos fabricantes de câmeras. Note que as informações devem ser alteradas para cada câmera, seguindo a legenda:
+
+DOMÍNIO: endereço IP da rede ou DDNS (ex: minha-camera.ddns.com.br ou 123.456.78.9)
+
+PORTA: Porta RTSP configurada na câmera (a porta padrão é a 554 na maioria das câmeras )
+
+USUÁRIO: Usuário de acesso a câmera (ex: admin)
+
+SENHA: Senha do usuário de acesso a câmera (ex: 1234)
+
+
+
+TECVOZ:
+Câmeras IP – Linha TW – Tecvoz
+
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/profile1
+
+DVR/NVR – Linha TW – Tecvoz
+
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/chID=1&streamType=main&linkType=tcpa
+
+DVR/NVR – Linha T1/THK – Tecvoz
+
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/Streaming/Channels/01
+
+DVR – TVZ
+
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp
+
+Câmeras IP – Tecvoz TV (Futuro)
+
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=1
+
+Câmeras – Linha T1/THK – Tecvoz
+
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/Streaming/Channels/101
+
+Câmeras – Linha ICB Inteligente – Tecvoz
+
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/mode=real&idc=1&ids=1
+
+ 
+ALIVE:
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp?real_stream
+
+AXIS:
+rtsp://USUARIO: SENHA@DOMINIO:PORTA/axis-media/media.amp?videocodac=h264
+
+CLEAR:
+rtsp://DOMINIO: PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp
+
+DAHUA:
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp?
+
+FOSCAN:
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/videoMain
+
+GREATEK:
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp
+
+GIGA:
+rtsp://DOMINIO:PORTA/user=USUARIO&amp;password=SENHA&amp;channel=1&amp;stream=0.sdp
+
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp
+
+HDL:
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp
+
+HIKVISION:
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/h264/ch1/main/av_stream
+
+HEROSPEED DVR:
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/snap.jpg
+
+JFL:
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/h264/ch1/main/av_stream
+
+INTELBRAS:
+01 – rtsp://USUARIO:SENHA@DOMINIO:PORTA/cam/realmonitor?channel=1&subtype=0
+
+02 – rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp?
+
+JORTAN:
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp
+
+LG:
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/Master-0
+
+LUXVISION:
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp
+
+MULTILASER:
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/H264?ch=1&subtype=0
+
+VENETIAN:
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp?
+
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif
+
+VIVOTEK:
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/live.sdp
+
+TWG:
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp?
+
+ZAVIO:
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/video.pro1
+
+RTSPs GENÉRICOS:
+rtsp://USUARIO:SENHA@DOMINIO:PORTA
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/h264?channel=1
+rtsp://DOMINIO:PORTA/user=USUARIO&password=SENHA&channel=1&stream=0.sdp
+rtsp://USUARIO:SENHA@DOMINIO:PORTA/onvif1
+
+
+
+
+----------------------------------------------------------------------------------
+Reconhecimento facial - https://www.dobitaobyte.com.br/face-detection-com-opencv/
+https://www.soleratec.com/support/rtsp/
+https://www.ispyconnect.com/man.aspx?n=grandstream&page=1
+https://security.world/rtsp/
