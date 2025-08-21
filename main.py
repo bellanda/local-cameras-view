@@ -32,6 +32,16 @@ app.add_middleware(
 app.include_router(create_status_router())
 
 
+# Cache black frame JPEG to avoid re-encoding
+def get_cached_black_jpeg():
+    """Get cached black frame JPEG to avoid re-encoding."""
+    if not hasattr(get_cached_black_jpeg, "_cached"):
+        black_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        _, buffer = cv2.imencode(".jpg", black_frame, [cv2.IMWRITE_JPEG_QUALITY, CAMERA_CONFIG["jpeg_quality"]])
+        get_cached_black_jpeg._cached = buffer.tobytes()
+    return get_cached_black_jpeg._cached
+
+
 # Initialize camera streams on startup
 @app.on_event("startup")
 async def startup_event():
@@ -283,19 +293,16 @@ async def gen_frames_async(camera_name: str):
                 frame_data = await asyncio.wait_for(client_queue.get(), timeout=CAMERA_CONFIG["frame_timeout"])
                 yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_data + b"\r\n")
             except asyncio.TimeoutError:
-                # Send a keep-alive frame if no new data
-                if camera.last_frame is not None:
-                    _, buffer = cv2.imencode(
-                        ".jpg", camera.last_frame, [cv2.IMWRITE_JPEG_QUALITY, CAMERA_CONFIG["jpeg_quality"]]
-                    )
-                    frame_data = buffer.tobytes()
-                    yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_data + b"\r\n")
+                # Send a keep-alive frame using cached JPEG to avoid re-encoding
+                with camera.lock:
+                    cached_jpeg = camera.last_frame_jpeg
+
+                if cached_jpeg is not None:
+                    yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + cached_jpeg + b"\r\n")
                 else:
-                    # Send a black frame if no camera data
-                    black_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-                    _, buffer = cv2.imencode(".jpg", black_frame)
-                    frame_data = buffer.tobytes()
-                    yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_data + b"\r\n")
+                    # Send cached black frame if no camera data
+                    black_frame_jpeg = get_cached_black_jpeg()
+                    yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + black_frame_jpeg + b"\r\n")
 
     except asyncio.CancelledError:
         print(f"Client disconnected from {camera_name}")
@@ -384,9 +391,16 @@ def generate_qr_code():
     print("   • Servidor intermediário com PyFFMPEG/OpenCV")
     print("   • Gerenciamento inteligente de streams")
     print("   • Endpoints de status e monitoramento")
+    print("   • Otimizações de performance e latência")
     print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":
     generate_qr_code()
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000,
+        log_level="info",
+        workers=1,  # Important: use only 1 worker with singleton in memory
+    )

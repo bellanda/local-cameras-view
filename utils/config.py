@@ -29,12 +29,14 @@ OPENCV_CONFIG = {
     },
 }
 
-# PyFFMPEG settings
+# PyFFMPEG settings for low-latency RTSP
 FFMPEG_CONFIG = {
     "rtsp_transport": "tcp",
-    "stimeout": 5000000,  # Socket timeout in microseconds
+    "stimeout": 2000000,  # Socket timeout in microseconds (2 seconds)
     "fflags": "nobuffer",  # Reduce buffering
     "flags": "low_delay",  # Low delay flag
+    "probesize": 32,  # Minimal probe size for faster startup
+    "analyzeduration": 0,  # No analysis delay
 }
 
 # Performance tuning
@@ -43,4 +45,7 @@ PERFORMANCE_CONFIG = {
     "max_clients_per_camera": 50,  # Maximum clients per camera
     "frame_skip_threshold": 0.1,  # Skip frame if client is too slow (seconds)
     "cleanup_interval": 60.0,  # Cleanup interval for disconnected clients (seconds)
+    "jpeg_cache_enabled": True,  # Enable JPEG caching to avoid re-encoding
+    "frame_copy_optimization": True,  # Optimize frame copying
+    "rtsp_low_latency": True,  # Enable RTSP low-latency optimizations
 }

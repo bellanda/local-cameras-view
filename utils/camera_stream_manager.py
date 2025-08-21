@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 
 import cv2
 
-from utils.config import CAMERA_CONFIG, OPENCV_CONFIG
+from utils.config import CAMERA_CONFIG, FFMPEG_CONFIG, OPENCV_CONFIG
 
 
 class CameraStream:
@@ -26,9 +26,11 @@ class CameraStream:
         self.is_running = False
         self.last_frame = None
         self.last_frame_time = 0
+        self.last_frame_jpeg = None  # Cache JPEG to avoid re-encoding
         self.frame_interval = 1.0 / CAMERA_CONFIG["target_fps"]
         self.lock = threading.Lock()
         self.stream_thread = None
+        self.jpeg_params = [cv2.IMWRITE_JPEG_QUALITY, CAMERA_CONFIG["jpeg_quality"]]
 
     def start(self):
         """Start the camera stream thread."""
@@ -75,19 +77,30 @@ class CameraStream:
 
                     # Only update if enough time has passed (rate limiting)
                     if current_time - self.last_frame_time >= self.frame_interval:
+                        # Encode ONCE outside the lock
+                        ok, buf = cv2.imencode(".jpg", frame, self.jpeg_params)
+                        if not ok:
+                            time.sleep(0.001)
+                            continue
+                        frame_bytes = buf.tobytes()
+
                         with self.lock:
-                            self.last_frame = frame.copy()
+                            # Store frame and JPEG data
+                            self.last_frame = frame  # No .copy() needed
                             self.last_frame_time = current_time
+                            self.last_frame_jpeg = frame_bytes
 
-                            # Add to buffer
+                            # Add to buffer if needed
                             if len(self.frame_buffer) < self.max_buffer_size:
-                                self.frame_buffer.append(frame.copy())
+                                self.frame_buffer.append(frame)  # No .copy() needed
 
-                            # Notify all clients
-                            self._notify_clients(frame)
+                        # Notify all clients with the same JPEG bytes
+                        self._notify_clients(frame_bytes)
 
-                        # Small delay to prevent overwhelming the system
-                        time.sleep(0.01)
+                        # Pace using remaining time instead of fixed sleep
+                        remaining = self.frame_interval - (time.time() - current_time)
+                        if remaining > 0:
+                            time.sleep(remaining)
                     else:
                         time.sleep(0.001)
                 else:
@@ -101,49 +114,45 @@ class CameraStream:
 
     def _create_ffmpeg_capture(self):
         """Create OpenCV capture using FFmpeg backend for better RTSP performance."""
-        cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
+        # Add RTSP optimization parameters to URL
+        url = self.rtsp_url
+        sep = "&" if "?" in url else "?"
+        url += f"{sep}rtsp_transport=tcp&fflags=nobuffer&flags=low_delay&stimeout={FFMPEG_CONFIG['stimeout']}"
+
+        cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
         cap.set(cv2.CAP_PROP_BUFFERSIZE, OPENCV_CONFIG["ip_camera"]["buffer_size"])
         cap.set(cv2.CAP_PROP_FPS, OPENCV_CONFIG["ip_camera"]["fps"])
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, OPENCV_CONFIG["ip_camera"]["width"])
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, OPENCV_CONFIG["ip_camera"]["height"])
         return cap
 
-    def _notify_clients(self, frame):
+    def _notify_clients(self, frame_bytes: bytes):
         """Notify all connected clients with the new frame."""
         if not self.clients:
             return
 
-        # Encode frame to JPEG
-        _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, CAMERA_CONFIG["jpeg_quality"]])
-        frame_data = buffer.tobytes()
-
-        # Remove disconnected clients
-        active_clients = []
+        # Keep all clients, even slow ones (they just lose this frame)
+        alive = []
         for client_queue in self.clients:
             try:
                 if not client_queue.full():
-                    client_queue.put_nowait(frame_data)
-                    active_clients.append(client_queue)
-            except asyncio.QueueFull:
-                # Client is too slow, skip this frame
-                pass
+                    client_queue.put_nowait(frame_bytes)
+                # Even if queue is full, keep the client (they just lose this frame)
+                alive.append(client_queue)
             except Exception:
-                # Client disconnected
+                # Real error: remove client
                 pass
 
-        self.clients = active_clients
+        self.clients = alive
 
     def add_client(self, client_queue: asyncio.Queue):
         """Add a new client to receive frames."""
         with self.lock:
             self.clients.append(client_queue)
-            # Send the last frame immediately if available
-            if self.last_frame is not None:
+            # Send the last frame immediately if available (using cached JPEG)
+            if self.last_frame_jpeg is not None:
                 try:
-                    _, buffer = cv2.imencode(
-                        ".jpg", self.last_frame, [cv2.IMWRITE_JPEG_QUALITY, CAMERA_CONFIG["jpeg_quality"]]
-                    )
-                    client_queue.put_nowait(buffer.tobytes())
+                    client_queue.put_nowait(self.last_frame_jpeg)
                 except asyncio.QueueFull:
                     pass
 
